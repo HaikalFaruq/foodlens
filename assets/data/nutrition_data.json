@@ -1,0 +1,42 @@
+[
+  {
+    "name": "Beef Bourguignon",
+    "calories": 280,
+    "fat_total_g": 18.0,
+    "carbohydrates_total_g": 10.0,
+    "protein_g": 20.0,
+    "fiber_g": 2.5
+  },
+  {
+    "name": "Lasagna",
+    "calories": 250,
+    "fat_total_g": 12.0,
+    "carbohydrates_total_g": 20.0,
+    "protein_g": 15.0,
+    "fiber_g": 2.0
+  },
+  {
+    "name": "Nasi Lemak",
+    "calories": 230,
+    "fat_total_g": 10.0,
+    "carbohydrates_total_g": 28.0,
+    "protein_g": 7.0,
+    "fiber_g": 2.0
+  },
+  {
+    "name": "Satay",
+    "calories": 220,
+    "fat_total_g": 12.0,
+    "carbohydrates_total_g": 8.0,
+    "protein_g": 18.0,
+    "fiber_g": 1.0
+  },
+  {
+    "name": "Sushi",
+    "calories": 150,
+    "fat_total_g": 3.0,
+    "carbohydrates_total_g": 25.0,
+    "protein_g": 8.0,
+    "fiber_g": 1.0
+  }
+] 
