@@ -3,10 +3,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:food_recognizer_app/model/nutrition_info.dart';
 
-class NutritionRepository {
-  NutritionRepository._();
-  static final NutritionRepository _instance = NutritionRepository._();
-  factory NutritionRepository() => _instance;
+class NutritionService {
+  NutritionService._();
+  static final NutritionService _instance = NutritionService._();
+  factory NutritionService() => _instance;
 
   Map<String, NutritionInfo> _nutritionData = const {};
   bool _isInitialized = false;
@@ -51,5 +51,4 @@ class NutritionRepository {
 
     return null;
   }
-
 }

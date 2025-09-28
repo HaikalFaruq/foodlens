@@ -4,16 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:food_recognizer_app/model/analysis_result.dart';
 import 'package:food_recognizer_app/service/image_service.dart';
 import 'package:food_recognizer_app/service/ml_service.dart';
-import 'package:food_recognizer_app/ui/camera_screen.dart';
-import 'package:food_recognizer_app/ui/result_screen.dart';
 import 'package:image_picker/image_picker.dart';
+
+import '../ui/navigation_route.dart';
+import '../ui/route/navigation_args.dart';
 
 class PhotoPickerController extends ChangeNotifier {
   final ImageService _imageService = ImageService();
   final MLService _mlService;
 
   PhotoPickerController({required MLService mlService})
-    : _mlService = mlService;
+      : _mlService = mlService;
 
   File? _image;
 
@@ -32,34 +33,60 @@ class PhotoPickerController extends ChangeNotifier {
   String? get serviceError => _serviceError;
 
   void _setLoading(bool value) {
-    _isLoading = value;
+    if (_isLoading != value) {
+      _isLoading = value;
+      notifyListeners();
+    }
+  }
+
+  void _resetState({bool keepImage = true}) {
+    if (!keepImage) _image = null;
+    _analysisResult = null;
+    _serviceError = null;
     notifyListeners();
   }
 
-  void _resetState() {
-    _analysisResult = null;
-    _serviceError = null;
+  void clearSelection() {
+    _resetState(keepImage: false);
   }
 
   Future<void> pickImage(ImageSource source) async {
+    if (_isLoading) return;
     _setLoading(true);
-    _resetState();
-    final file = await _imageService.pickImage(source);
-    if (file != null) {
-      _image = file;
+    _resetState(keepImage: false);
+    try {
+      final file = await _imageService.pickImage(source);
+      if (file != null) {
+        _image = file;
+        notifyListeners();
+      }
+    } catch (e) {
+      _serviceError = 'Gagal memilih gambar: $e';
+      notifyListeners();
+    } finally {
+      _setLoading(false);
     }
-    _setLoading(false);
   }
 
   Future<void> cropImage(BuildContext context) async {
-    if (_image == null) return;
+    if (_image == null || _isLoading) return;
     _setLoading(true);
-    _resetState();
-    final file = await _imageService.cropImage(_image!);
-    if (file != null) {
-      _image = file;
+    _analysisResult = null;
+    _serviceError = null;
+    notifyListeners();
+
+    try {
+      final file = await _imageService.cropImage(_image!);
+      if (file != null) {
+        _image = file;
+        notifyListeners();
+      }
+    } catch (e) {
+      _serviceError = 'Gagal memotong gambar: $e';
+      notifyListeners();
+    } finally {
+      _setLoading(false);
     }
-    _setLoading(false);
   }
 
   Future<void> analyzeImage(BuildContext context) async {
@@ -68,7 +95,13 @@ class PhotoPickerController extends ChangeNotifier {
       notifyListeners();
       return;
     }
+    if (_isLoading) return;
+
     _setLoading(true);
+    _analysisResult = null;
+    _serviceError = null;
+    notifyListeners();
+
     try {
       _analysisResult = await _mlService.analyzeImage(_image!);
     } catch (e) {
@@ -77,17 +110,18 @@ class PhotoPickerController extends ChangeNotifier {
       _setLoading(false);
     }
 
-    if (_analysisResult != null && context.mounted) {
-      Navigator.push(
+    if (_image != null && _analysisResult != null) {
+      Navigator.pushNamed(
         context,
-        MaterialPageRoute(
-          builder: (context) =>
-              ResultScreen(image: _image!, analysisResult: _analysisResult!),
+        NavigationRoute.analyzeRoute.name,
+        arguments: ResultPageArgs(
+          image: _image!,
+          analysisResult: _analysisResult!,
         ),
       );
     } else {
       _serviceError =
-      'Makanan tidak teridentifikasi. Coba foto lain (pencahayaan jelas, objek memenuhi frame).';
+          'Makanan tidak teridentifikasi. Coba foto lain (pencahayaan jelas, objek memenuhi frame).';
       notifyListeners();
     }
   }
@@ -95,12 +129,13 @@ class PhotoPickerController extends ChangeNotifier {
   void initialize(BuildContext context) {
     if (!_mlService.isInitialized) {
       _serviceError =
-          'ML Service could not be initialized. Please check your internet connection and restart the app.';
+          'ML Service belum siap. Pastikan model telah diinisialisasi lalu buka ulang aplikasi.';
       notifyListeners();
     }
   }
 
   Future<void> showImageSourceDialog(BuildContext context) async {
+    if (_isLoading) return;
     final source = await showDialog<ImageSource>(
       context: context,
       builder: (context) => AlertDialog(
@@ -122,12 +157,5 @@ class PhotoPickerController extends ChangeNotifier {
     if (source != null) {
       await pickImage(source);
     }
-  }
-
-  void navigateToLiveFeed(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const CameraScreen()),
-    );
   }
 }

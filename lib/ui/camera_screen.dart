@@ -40,7 +40,13 @@ class _CameraScreenState extends State<CameraScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _controller?.dispose();
+    if (_controller != null) {
+      if (_controller!.value.isStreamingImages) {
+        _controller!.stopImageStream();
+      }
+      _controller!.dispose();
+      _controller = null;
+    }
     _liteRTService.dispose();
     super.dispose();
   }
@@ -48,53 +54,80 @@ class _CameraScreenState extends State<CameraScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    if (state == AppLifecycleState.resumed) {
-      if (_controller != null) {
-        _initializeCamera();
+    if (_controller == null) return;
+
+    if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
+      if (_controller!.value.isStreamingImages) {
+        _controller!.stopImageStream();
       }
-    } else {
-      _controller?.stopImageStream();
-      _controller?.dispose();
+      _controller!.dispose();
+      _controller = null;
+      setState(() => _isCameraInitialized = false);
+    } else if (state == AppLifecycleState.resumed) {
+      _initializeCamera();
     }
   }
 
   Future<void> _initializeCamera() async {
     try {
+      if (_controller != null) {
+        if (_controller!.value.isStreamingImages) {
+          await _controller!.stopImageStream();
+        }
+        await _controller!.dispose();
+        _controller = null;
+      }
+
       _cameras = await availableCameras();
-      if (_cameras != null && _cameras!.isNotEmpty) {
-        _controller = CameraController(
-          _cameras![0],
-          ResolutionPreset.medium,
-          enableAudio: false,
-        );
-
-        await _controller!.initialize();
+      if (_cameras == null || _cameras!.isEmpty) {
         if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No cameras available.')),
+        );
+        return;
+      }
 
-        _controller!.startImageStream((image) {
+      _controller = CameraController(
+        _cameras!.first,
+        ResolutionPreset.medium,
+        enableAudio: false,
+        imageFormatGroup: ImageFormatGroup.yuv420,
+      );
+
+      await _controller!.initialize();
+      if (!mounted) return;
+
+      if (!_controller!.value.isStreamingImages) {
+        await _controller!.startImageStream((image) async {
           if (_isProcessing) return;
           setState(() => _isProcessing = true);
 
-          _liteRTService.analyzeCameraFrame(image).then((result) {
+          try {
+            final result = await _liteRTService.analyzeCameraFrame(image);
             if (!mounted) return;
             if (result != null) {
-              setState(() {
-                _prediction = result;
-              });
+              setState(() => _prediction = result);
             }
-            setState(() => _isProcessing = false);
-          });
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Analyze error: $e')),
+              );
+            }
+          } finally {
+            if (mounted) setState(() => _isProcessing = false);
+          }
         });
+      }
 
-        setState(() {
-          _isCameraInitialized = true;
-        });
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No cameras available.')),
-          );
-        }
+      if (mounted) {
+        setState(() => _isCameraInitialized = true);
+      }
+    } on CameraException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Camera error [${e.code}]: ${e.description}')),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -126,7 +159,7 @@ class _CameraScreenState extends State<CameraScreen>
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.6),
+                          color: Colors.black,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(

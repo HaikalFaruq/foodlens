@@ -51,19 +51,29 @@ class GeminiService {
 
   Future<NutritionInfo?> getNutritionInfoFromGemini(String foodName) async {
     if (!_isInitialized) return null;
+
     final prompt =
-        'Untuk makanan "$foodName", berikan estimasi nutrisi per 100g dalam JSON valid dengan keys: '
-        '{"calories","fat_total_g","carbohydrates_total_g","protein_g","fiber_g"} tanpa teks tambahan.';
+        'Untuk makanan "$foodName", berikan estimasi nutrisi per 100g dalam JSON valid '
+        'dengan keys: {"calories","fat_total_g","carbohydrates_total_g","protein_g","fiber_g"} '
+        'tanpa teks tambahan.';
+
     try {
-      final res = await _model.generateContent([Content.text(prompt)]).timeout(
-          const Duration(seconds: 12));
-      if (res.text == null) return null;
-      final cleaned = _cleanJsonString(res.text!);
+      final res = await _model
+          .generateContent([Content.text(prompt)])
+          .timeout(const Duration(seconds: 12));
+
+      final text = res.text;
+      if (text == null || text.trim().isEmpty) return null;
+
+      final cleaned = _cleanJsonString(text);
       final map = json.decode(cleaned) as Map<String, dynamic>;
       map['name'] = foodName;
+
       return NutritionInfo.fromJson(map);
+    } on TimeoutException {
+      return null;
     } catch (_) {
-      return NutritionInfo.notFound(foodName);
+      return null;
     }
   }
 }

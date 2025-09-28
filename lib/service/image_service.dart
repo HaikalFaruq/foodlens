@@ -24,7 +24,7 @@ class ImageService {
 
   Future<File?> cropImage(File imageFile) async {
     try {
-      final croppedFile = await ImageCropper().cropImage(
+      final CroppedFile? croppedFile = await ImageCropper().cropImage(
         sourcePath: imageFile.path,
         uiSettings: [
           AndroidUiSettings(
@@ -34,6 +34,7 @@ class ImageService {
           IOSUiSettings(title: 'Cropper'),
         ],
       );
+
       if (croppedFile == null) return null;
       return File(croppedFile.path);
     } catch (e) {

@@ -2,11 +2,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:food_recognizer_app/controller/photo_picker_controller.dart';
-import 'package:food_recognizer_app/model/analysis_result.dart';
-import 'package:food_recognizer_app/ui/camera_screen.dart';
-import 'package:food_recognizer_app/ui/theme/app_theme.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+
+import 'navigation_route.dart';
 
 class PhotoPickerScreen extends StatefulWidget {
   const PhotoPickerScreen({super.key});
@@ -19,53 +17,22 @@ class _PhotoPickerScreenState extends State<PhotoPickerScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<PhotoPickerController>().initialize(context);
-    });
-  }
-
-  Future<void> _showImageSourceDialog(BuildContext context) async {
-    final controller = context.read<PhotoPickerController>();
-    final source = await showDialog<ImageSource>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Select Image Source"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, ImageSource.gallery),
-            child: const Text("Gallery"),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, ImageSource.camera),
-            child: const Text("Camera"),
-          ),
-        ],
-      ),
-    );
-
-    if (source != null) {
-      await controller.pickImage(source);
-    }
-  }
-
-  void _navigateToLiveFeed(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const CameraScreen()),
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => context.read<PhotoPickerController>().initialize(context),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<PhotoPickerController>();
+    final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Food Recognizer'),
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: Colors.white,
+        backgroundColor: scheme.primary,
+        foregroundColor: scheme.onPrimary,
       ),
-      backgroundColor: const Color(0xFFF0F2F5),
       body: Stack(
         children: [
           Padding(
@@ -95,9 +62,8 @@ class _ScreenContent extends StatelessWidget {
     final controller = context.watch<PhotoPickerController>();
     if (controller.image != null) {
       return _ImagePreview(image: controller.image!);
-    } else {
-      return const _ImagePlaceholder();
     }
+    return const _ImagePlaceholder();
   }
 }
 
@@ -112,7 +78,12 @@ class _ImagePreview extends StatelessWidget {
       elevation: 4,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Image.file(image, fit: BoxFit.cover, height: 300),
+      child: Image.file(
+        image,
+        fit: BoxFit.cover,
+        height: 300,
+        width: double.infinity,
+      ),
     );
   }
 }
@@ -122,9 +93,11 @@ class _ImagePlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final controller = context.read<PhotoPickerController>();
+    final scheme = Theme.of(context).colorScheme;
+
     return GestureDetector(
-      onTap: () =>
-          context.read<PhotoPickerController>().showImageSourceDialog(context),
+      onTap: () => controller.showImageSourceDialog(context),
       child: Card(
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -134,11 +107,11 @@ class _ImagePlaceholder extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.camera_alt, size: 60, color: Colors.grey[600]),
+              Icon(Icons.camera_alt, size: 60, color: scheme.secondary),
               const SizedBox(height: 16),
               Text(
                 "Tap to select an image",
-                style: TextStyle(fontSize: 18, color: Colors.grey[700]),
+                style: Theme.of(context).textTheme.titleMedium,
               ),
             ],
           ),
@@ -155,41 +128,81 @@ class _BottomSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     if (controller.serviceError != null) {
-      return Text(
-        controller.serviceError!,
-        textAlign: TextAlign.center,
-        style: const TextStyle(color: Colors.red, fontSize: 16),
+      return Column(
+        children: [
+          Text(
+            controller.serviceError!,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: scheme.error, fontSize: 16),
+          ),
+          const SizedBox(height: 12),
+          if (controller.image == null)
+            ElevatedButton(
+              onPressed: controller.isLoading
+                  ? null
+                  : () => controller.showImageSourceDialog(context),
+              child: const Text('Pick an image'),
+            ),
+        ],
       );
     }
-    if (controller.analysisResult != null) {
-      return _ResultDisplay(result: controller.analysisResult!);
+
+    if (controller.image != null && controller.analysisResult == null) {
+      return const _ActionButtons();
     }
-    if (controller.image != null) {
-      return _ActionButtons();
+
+    if (controller.image == null) {
+      return const _PickerButtons();
     }
-    return const _PickerButtons();
+
+    return Column(
+      children: [
+        ElevatedButton.icon(
+          icon: const Icon(Icons.insights),
+          label: const Text('View Analysis Detail'),
+          onPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Result already generated.')),
+            );
+          },
+        ),
+        const SizedBox(height: 12),
+        TextButton(
+          onPressed: controller.isLoading ? null : controller.clearSelection,
+          child: const Text('Pick another image'),
+        ),
+      ],
+    );
   }
 }
 
 class _ActionButtons extends StatelessWidget {
+  const _ActionButtons();
+
   @override
   Widget build(BuildContext context) {
-    final controller = context.read<PhotoPickerController>();
+    final controller = context.watch<PhotoPickerController>();
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         ElevatedButton.icon(
           icon: const Icon(Icons.crop),
           label: const Text('Crop'),
-          onPressed: () => controller.cropImage(context),
-          style: AppTheme.themeData.elevatedButtonTheme.style,
+          onPressed: controller.isLoading
+              ? null
+              : () => context.read<PhotoPickerController>().cropImage(context),
         ),
         ElevatedButton.icon(
           icon: const Icon(Icons.science),
           label: const Text('Analyze'),
-          onPressed: () => controller.analyzeImage(context),
-          style: AppTheme.themeData.elevatedButtonTheme.style,
+          onPressed: controller.isLoading
+              ? null
+              : () =>
+                  context.read<PhotoPickerController>().analyzeImage(context),
         ),
       ],
     );
@@ -201,58 +214,31 @@ class _PickerButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.read<PhotoPickerController>();
+    final controller = context.watch<PhotoPickerController>();
     return Column(
       children: [
         ElevatedButton(
-          onPressed: () => controller.showImageSourceDialog(context),
-          style: AppTheme.themeData.elevatedButtonTheme.style?.copyWith(
-            minimumSize: MaterialStateProperty.all(
-              const Size(double.infinity, 50),
-            ),
+          onPressed: controller.isLoading
+              ? null
+              : () => context
+                  .read<PhotoPickerController>()
+                  .showImageSourceDialog(context),
+          style: ElevatedButton.styleFrom(
+            minimumSize: const Size(double.infinity, 50),
           ),
           child: const Text('Pick from Gallery/Camera'),
         ),
         const SizedBox(height: 12),
         TextButton(
-          onPressed: () => controller.navigateToLiveFeed(context),
+          onPressed: controller.isLoading
+              ? null
+              : () => Navigator.pushNamed(
+                    context,
+                    NavigationRoute.cameraRoute.name,
+                  ),
           child: const Text('Or use Live Camera Feed'),
         ),
       ],
-    );
-  }
-}
-
-class _ResultDisplay extends StatelessWidget {
-  const _ResultDisplay({required this.result});
-
-  final AnalysisResult result;
-
-  @override
-  Widget build(BuildContext context) {
-    final confidence = (result.confidence * 100).toStringAsFixed(2);
-    return Card(
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              result.label,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            Text(
-              '$confidence%',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.primaryColor,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

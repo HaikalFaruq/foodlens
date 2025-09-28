@@ -6,8 +6,7 @@ import 'package:food_recognizer_app/model/analysis_result.dart';
 import 'package:food_recognizer_app/model/food_info.dart';
 import 'package:food_recognizer_app/model/nutrition_info.dart';
 import 'package:food_recognizer_app/service/gemini_service.dart';
-import 'package:food_recognizer_app/service/nutrition_repository.dart';
-import 'package:food_recognizer_app/ui/theme/app_theme.dart';
+import 'package:food_recognizer_app/service/nutrition_service.dart';
 import 'package:provider/provider.dart';
 
 class ResultScreen extends StatelessWidget {
@@ -22,16 +21,19 @@ class ResultScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return ChangeNotifierProvider(
       create: (_) => ResultController(
         geminiService: Provider.of<GeminiService>(context, listen: false),
-        nutritionRepository: Provider.of<NutritionRepository>(context, listen: false),
+        nutritionRepository:
+            Provider.of<NutritionService>(context, listen: false),
       )..fetchFoodDetails(analysisResult.label, analysisResult.confidence),
       child: Scaffold(
         appBar: AppBar(
           title: const Text("Analysis Result"),
-          backgroundColor: AppTheme.primaryColor,
-          foregroundColor: Colors.white,
+          backgroundColor: scheme.primary,
+          foregroundColor: scheme.onPrimary,
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -108,6 +110,7 @@ class _ResultCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final confidencePercentage = (foodInfo.confidence * 100).toStringAsFixed(2);
     final textTheme = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
 
     return Card(
       elevation: 4,
@@ -131,14 +134,13 @@ class _ResultCard extends StatelessWidget {
                 Text(
                   "$confidencePercentage%",
                   style: textTheme.titleMedium?.copyWith(
-                    color: AppTheme.primaryColor,
+                    color: scheme.primary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
             ),
             const Divider(height: 24),
-
             if (foodInfo.description != null &&
                 foodInfo.description!.isNotEmpty) ...[
               Text("Description", style: textTheme.titleLarge),
@@ -146,8 +148,6 @@ class _ResultCard extends StatelessWidget {
               Text(foodInfo.description!),
               const Divider(height: 24),
             ],
-
-            // Nutrition Facts Section
             Text("Nutrition Facts", style: textTheme.titleLarge),
             const SizedBox(height: 8),
             _NutritionSection(nutrition: foodInfo.nutritionInfo),
