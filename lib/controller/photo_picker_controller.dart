@@ -114,7 +114,6 @@ class PhotoPickerController extends ChangeNotifier {
       _serviceError = 'Terjadi kesalahan saat analisis: $e';
     } finally {
       _setLoading(false);
-      _postAnalyze = true;
       notifyListeners();
     }
 
@@ -129,10 +128,11 @@ class PhotoPickerController extends ChangeNotifier {
       );
     } else {
       _serviceError =
-          'Makanan tidak teridentifikasi. Coba foto lain (pencahayaan jelas, objek memenuhi frame).';
+      'Makanan tidak teridentifikasi. Coba foto lain (pencahayaan jelas, objek memenuhi frame).';
       notifyListeners();
     }
   }
+
 
   void initialize(BuildContext context) {
     if (!_mlService.isInitialized) {

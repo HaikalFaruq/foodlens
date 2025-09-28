@@ -169,12 +169,10 @@ class _BottomSection extends StatelessWidget {
       );
     }
 
-    // Belum ada gambar → tombol pilih dan Live Feed
     if (controller.image == null) {
       return const _PickerButtons();
     }
 
-    // Sudah ada hasil (meskipun navigasi biasanya langsung ke ResultScreen)
     return Column(
       children: [
         ElevatedButton.icon(
@@ -207,8 +205,7 @@ class _ActionButtons extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = context.watch<PhotoPickerController>();
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    return Column(
       children: [
         ElevatedButton.icon(
           icon: const Icon(Icons.crop),
@@ -217,6 +214,7 @@ class _ActionButtons extends StatelessWidget {
               ? null
               : () => context.read<PhotoPickerController>().cropImage(context),
         ),
+        const SizedBox(height: 12),
         ElevatedButton.icon(
           icon: const Icon(Icons.science),
           label: const Text('Analyze'),
