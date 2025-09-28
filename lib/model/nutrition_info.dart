@@ -16,14 +16,14 @@ class NutritionInfo {
   });
 
   factory NutritionInfo.fromJson(Map<String, dynamic> json) {
-    double _d(dynamic v) => switch (v) { int i => i.toDouble(), double d => d, _ => 0.0 };
+    double d(dynamic v) => switch (v) { int i => i.toDouble(), double d => d, _ => 0.0 };
     return NutritionInfo(
       name: (json['name'] ?? 'N/A').toString(),
-      calories: _d(json['calories']),
-      fat: _d(json['fat_total_g']),
-      carbs: _d(json['carbohydrates_total_g']),
-      protein: _d(json['protein_g']),
-      fiber: _d(json['fiber_g']),
+      calories: d(json['calories']),
+      fat: d(json['fat_total_g']),
+      carbs: d(json['carbohydrates_total_g']),
+      protein: d(json['protein_g']),
+      fiber: d(json['fiber_g']),
     );
   }
 

@@ -6,8 +6,8 @@ import 'package:food_recognizer_app/service/image_service.dart';
 import 'package:food_recognizer_app/service/ml_service.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../ui/navigation_route.dart';
 import '../ui/route/navigation_args.dart';
+import '../ui/route/navigation_route.dart';
 
 class PhotoPickerController extends ChangeNotifier {
   final ImageService _imageService = ImageService();
@@ -32,6 +32,10 @@ class PhotoPickerController extends ChangeNotifier {
 
   String? get serviceError => _serviceError;
 
+  bool _postAnalyze = false;
+
+  bool get postAnalyze => _postAnalyze;
+
   void _setLoading(bool value) {
     if (_isLoading != value) {
       _isLoading = value;
@@ -43,6 +47,7 @@ class PhotoPickerController extends ChangeNotifier {
     if (!keepImage) _image = null;
     _analysisResult = null;
     _serviceError = null;
+    _postAnalyze = false;
     notifyListeners();
   }
 
@@ -73,6 +78,7 @@ class PhotoPickerController extends ChangeNotifier {
     _setLoading(true);
     _analysisResult = null;
     _serviceError = null;
+    _postAnalyze = false;
     notifyListeners();
 
     try {
@@ -108,6 +114,8 @@ class PhotoPickerController extends ChangeNotifier {
       _serviceError = 'Terjadi kesalahan saat analisis: $e';
     } finally {
       _setLoading(false);
+      _postAnalyze = true;
+      notifyListeners();
     }
 
     if (_image != null && _analysisResult != null) {

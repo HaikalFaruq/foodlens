@@ -2,9 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:food_recognizer_app/controller/photo_picker_controller.dart';
+import 'package:food_recognizer_app/ui/route/navigation_route.dart';
 import 'package:provider/provider.dart';
-
-import 'navigation_route.dart';
 
 class PhotoPickerScreen extends StatefulWidget {
   const PhotoPickerScreen({super.key});
@@ -123,7 +122,6 @@ class _ImagePlaceholder extends StatelessWidget {
 
 class _BottomSection extends StatelessWidget {
   const _BottomSection({required this.controller});
-
   final PhotoPickerController controller;
 
   @override
@@ -132,6 +130,7 @@ class _BottomSection extends StatelessWidget {
 
     if (controller.serviceError != null) {
       return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
             controller.serviceError!,
@@ -139,25 +138,43 @@ class _BottomSection extends StatelessWidget {
             style: TextStyle(color: scheme.error, fontSize: 16),
           ),
           const SizedBox(height: 12),
-          if (controller.image == null)
-            ElevatedButton(
-              onPressed: controller.isLoading
-                  ? null
-                  : () => controller.showImageSourceDialog(context),
-              child: const Text('Pick an image'),
-            ),
+          ElevatedButton(
+            onPressed: controller.isLoading
+                ? null
+                : () => context
+                .read<PhotoPickerController>()
+                .showImageSourceDialog(context),
+            child: const Text('Pick another image'),
+          ),
         ],
       );
     }
 
     if (controller.image != null && controller.analysisResult == null) {
-      return const _ActionButtons();
+      return Column(
+        children: [
+          const _ActionButtons(),
+          if (controller.postAnalyze) ...[
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: controller.isLoading
+                  ? null
+                  : () => context
+                  .read<PhotoPickerController>()
+                  .showImageSourceDialog(context),
+              child: const Text('Pick another image'),
+            ),
+          ],
+        ],
+      );
     }
 
+    // Belum ada gambar → tombol pilih dan Live Feed
     if (controller.image == null) {
       return const _PickerButtons();
     }
 
+    // Sudah ada hasil (meskipun navigasi biasanya langsung ke ResultScreen)
     return Column(
       children: [
         ElevatedButton.icon(
@@ -170,8 +187,12 @@ class _BottomSection extends StatelessWidget {
           },
         ),
         const SizedBox(height: 12),
-        TextButton(
-          onPressed: controller.isLoading ? null : controller.clearSelection,
+        ElevatedButton(
+          onPressed: controller.isLoading
+              ? null
+              : () => context
+              .read<PhotoPickerController>()
+              .showImageSourceDialog(context),
           child: const Text('Pick another image'),
         ),
       ],
