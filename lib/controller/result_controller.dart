@@ -11,15 +11,13 @@ class ResultController extends ChangeNotifier {
   ResultController({
     required GeminiService geminiService,
     required NutritionRepository nutritionRepository,
-  }) : _geminiService = geminiService,
-       _nutritionRepository = nutritionRepository;
+  })  : _geminiService = geminiService,
+        _nutritionRepository = nutritionRepository;
 
   bool _isLoading = false;
-
   bool get isLoading => _isLoading;
 
   FoodInfo? _foodInfo;
-
   FoodInfo? get foodInfo => _foodInfo;
 
   Future<void> fetchFoodDetails(String foodLabel, double confidence) async {
@@ -27,28 +25,38 @@ class ResultController extends ChangeNotifier {
     _foodInfo = FoodInfo(label: foodLabel, confidence: confidence);
     notifyListeners();
 
-    NutritionInfo? nutritionResult = _nutritionRepository.getLocalNutritionInfo(
-      foodLabel,
-    );
+    try {
+      NutritionInfo? nutritionResult =
+      _nutritionRepository.getLocalNutritionInfo(foodLabel);
 
-    if (nutritionResult == null) {
-      final nutritionFuture = _geminiService.getNutritionInfoFromGemini(
-        foodLabel,
+      if (nutritionResult == null) {
+        try {
+          nutritionResult = await _geminiService
+              .getNutritionInfoFromGemini(foodLabel)
+              .timeout(const Duration(seconds: 12));
+        } catch (_) {
+        }
+      }
+
+      String? descriptionResult;
+      try {
+        descriptionResult = await _geminiService
+            .generateFoodDescription(foodLabel)
+            .timeout(const Duration(seconds: 8));
+      } catch (_) {
+        descriptionResult = null;
+      }
+
+      nutritionResult ??= NutritionInfo.notFound(foodLabel);
+
+      _foodInfo = _foodInfo?.copyWith(
+        nutritionInfo: nutritionResult,
+        description: descriptionResult,
+        referenceImageUrl: null,
       );
-      nutritionResult = await nutritionFuture;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
-
-    final descriptionResult = await _geminiService.generateFoodDescription(
-      foodLabel,
-    );
-
-    _foodInfo = _foodInfo?.copyWith(
-      nutritionInfo: nutritionResult,
-      description: descriptionResult,
-      referenceImageUrl: null,
-    );
-
-    _isLoading = false;
-    notifyListeners();
   }
 }

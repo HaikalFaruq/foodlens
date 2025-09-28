@@ -74,7 +74,9 @@ class _CameraScreenState extends State<CameraScreen>
         _controller!.startImageStream((image) {
           if (_isProcessing) return;
           setState(() => _isProcessing = true);
+
           _liteRTService.analyzeCameraFrame(image).then((result) {
+            if (!mounted) return;
             if (result != null) {
               setState(() {
                 _prediction = result;

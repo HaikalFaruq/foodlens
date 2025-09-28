@@ -1,48 +1,55 @@
 import 'dart:convert';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:food_recognizer_app/model/nutrition_info.dart';
 
 class NutritionRepository {
-  late final Map<String, NutritionInfo> _nutritionData;
+  NutritionRepository._();
+  static final NutritionRepository _instance = NutritionRepository._();
+  factory NutritionRepository() => _instance;
+
+  Map<String, NutritionInfo> _nutritionData = const {};
   bool _isInitialized = false;
 
-  NutritionRepository._();
-
-  static final NutritionRepository _instance = NutritionRepository._();
-
-  factory NutritionRepository() {
-    return _instance;
-  }
+  bool get isInitialized => _isInitialized;
 
   Future<void> initialize() async {
     if (_isInitialized) return;
-
     try {
-      final jsonString = await rootBundle.loadString(
-        'assets/data/nutrition_data.json',
-      );
-      final List<dynamic> jsonList = json.decode(jsonString);
-
+      final jsonString = await rootBundle.loadString('assets/data/nutrition_data.json');
+      final List<dynamic> jsonList = json.decode(jsonString) as List<dynamic>;
       _nutritionData = {
-        for (var item in jsonList)
-          (item['name'] as String).toLowerCase(): NutritionInfo.fromJson(item),
+        for (final item in jsonList)
+          ((item as Map<String, dynamic>)['name'] as String).toLowerCase()
+              .trim(): NutritionInfo.fromJson(item),
       };
-
       _isInitialized = true;
-      print("NutritionRepository: Successfully initialized with local data.");
+      debugPrint("NutritionRepository initialized with ${_nutritionData.length} items.");
     } catch (e) {
-      print("NutritionRepository: Failed to load local nutrition data - $e");
-      _nutritionData = {};
+      debugPrint("NutritionRepository init failed: $e");
+      _nutritionData = const {};
     }
   }
 
   NutritionInfo? getLocalNutritionInfo(String foodName) {
     if (!_isInitialized) {
-      print("Warning: NutritionRepository not initialized.");
+      debugPrint("Warning: NutritionRepository not initialized.");
       return null;
     }
-    final normalizedName = foodName.toLowerCase();
-    return _nutritionData[normalizedName];
+
+    final q = foodName.toLowerCase().trim();
+
+    final direct = _nutritionData[q];
+    if (direct != null) return direct;
+
+    for (final entry in _nutritionData.entries) {
+      final k = entry.key;
+      if (q.contains(k) || k.contains(q)) {
+        return entry.value;
+      }
+    }
+
+    return null;
   }
+
 }

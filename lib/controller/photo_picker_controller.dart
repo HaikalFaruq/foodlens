@@ -5,7 +5,7 @@ import 'package:food_recognizer_app/model/analysis_result.dart';
 import 'package:food_recognizer_app/service/image_service.dart';
 import 'package:food_recognizer_app/service/ml_service.dart';
 import 'package:food_recognizer_app/ui/camera_screen.dart';
-import 'package:food_recognizer_app/ui/result/result_screen.dart';
+import 'package:food_recognizer_app/ui/result_screen.dart';
 import 'package:image_picker/image_picker.dart';
 
 class PhotoPickerController extends ChangeNotifier {
@@ -63,10 +63,19 @@ class PhotoPickerController extends ChangeNotifier {
   }
 
   Future<void> analyzeImage(BuildContext context) async {
-    if (_image == null) return;
+    if (_image == null) {
+      _serviceError = 'Pilih gambar dulu.';
+      notifyListeners();
+      return;
+    }
     _setLoading(true);
-    _analysisResult = await _mlService.analyzeImage(_image!);
-    _setLoading(false);
+    try {
+      _analysisResult = await _mlService.analyzeImage(_image!);
+    } catch (e) {
+      _serviceError = 'Terjadi kesalahan saat analisis: $e';
+    } finally {
+      _setLoading(false);
+    }
 
     if (_analysisResult != null && context.mounted) {
       Navigator.push(
@@ -78,7 +87,7 @@ class PhotoPickerController extends ChangeNotifier {
       );
     } else {
       _serviceError =
-          'Could not identify the food. Please try a different image.';
+      'Makanan tidak teridentifikasi. Coba foto lain (pencahayaan jelas, objek memenuhi frame).';
       notifyListeners();
     }
   }

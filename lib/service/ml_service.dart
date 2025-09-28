@@ -23,7 +23,7 @@ class MLService {
     if (_isInitialized) return;
     try {
       final model = await FirebaseModelDownloader.instance.getModel(
-        "food_recognizer",
+        "food_model",
         FirebaseModelDownloadType.localModelUpdateInBackground,
         FirebaseModelDownloadConditions(
           iosAllowsCellularAccess: true,
@@ -32,7 +32,7 @@ class MLService {
           androidDeviceIdleRequired: false,
         ),
       );
-      _interpreter = await tfl.Interpreter.fromFile(model.file);
+      _interpreter = tfl.Interpreter.fromFile(model.file);
       await _loadLabels();
       _isInitialized = true;
     } catch (e) {
@@ -160,7 +160,7 @@ void _inferenceIsolate(List<dynamic> args) async {
         outputShape[0] != 1 ||
         outputShape[1] != labels.length) {
       throw Exception(
-        'Model output shape ${outputShape} does not match label count ${labels.length}.',
+        'Model output shape $outputShape does not match label count ${labels.length}.',
       );
     }
 

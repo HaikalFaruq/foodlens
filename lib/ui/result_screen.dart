@@ -25,7 +25,7 @@ class ResultScreen extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) => ResultController(
         geminiService: Provider.of<GeminiService>(context, listen: false),
-        nutritionRepository: NutritionRepository(),
+        nutritionRepository: Provider.of<NutritionRepository>(context, listen: false),
       )..fetchFoodDetails(analysisResult.label, analysisResult.confidence),
       child: Scaffold(
         appBar: AppBar(
@@ -34,7 +34,7 @@ class ResultScreen extends StatelessWidget {
           foregroundColor: Colors.white,
         ),
         body: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

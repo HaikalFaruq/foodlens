@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:food_recognizer_app/controller/photo_picker_controller.dart';
@@ -15,21 +16,27 @@ Future<void> main() async {
 
   final mlService = MLService();
   final geminiService = GeminiService();
+  final nutritionRepo = NutritionRepository();
 
-  await Future.wait([
-    mlService.initialize(),
-    NutritionRepository()
-        .initialize(),
-  ]);
-
-  final photoPickerController = PhotoPickerController(mlService: mlService);
+  try {
+    await Future.wait([
+      mlService.initialize(),
+      nutritionRepo.initialize(),
+    ]);
+  } catch (e) {
+    debugPrint('App init failed: $e');
+  }
 
   runApp(
     MultiProvider(
       providers: [
         Provider<MLService>.value(value: mlService),
         Provider<GeminiService>.value(value: geminiService),
-        ChangeNotifierProvider.value(value: photoPickerController),
+        Provider<NutritionRepository>.value(value: nutritionRepo),
+        ChangeNotifierProvider(
+          create: (_) => PhotoPickerController(mlService: mlService),
+          lazy: false,
+        ),
       ],
       child: const MyApp(),
     ),
@@ -38,7 +45,6 @@ Future<void> main() async {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
