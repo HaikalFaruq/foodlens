@@ -145,7 +145,11 @@ void _inferenceIsolate(List<dynamic> args) async {
     final imageFile = File(imagePath);
 
     final image = img.decodeImage(imageFile.readAsBytesSync())!;
-    final modelInputSize = interpreter.getInputTensor(0).shape[1];
+    final inputTensor = interpreter.getInputTensor(0);
+    final modelInputSize = inputTensor.shape[1];
+    final inputType = inputTensor.type;
+
+    debugPrint("Model input - Shape: ${inputTensor.shape}, Type: $inputType");
 
     final resizedImage = img.copyResize(
       image,
@@ -154,28 +158,53 @@ void _inferenceIsolate(List<dynamic> args) async {
     );
 
     final imageBytes = resizedImage.getBytes();
+    
+    // Check if model expects normalized float input (0-1) or uint8 (0-255)
+    final needsNormalization = inputType == tfl.TensorType.float32;
 
-    var input = List.generate(
-      1,
-      (i) => List.generate(
-        modelInputSize,
-        (j) => List.generate(modelInputSize, (k) => List.generate(3, (l) => 0)),
-      ),
-    );
+    var input = needsNormalization
+        ? List.generate(
+            1,
+            (i) => List.generate(
+              modelInputSize,
+              (j) => List.generate(
+                  modelInputSize, (k) => List.generate(3, (l) => 0.0)),
+            ),
+          )
+        : List.generate(
+            1,
+            (i) => List.generate(
+              modelInputSize,
+              (j) => List.generate(modelInputSize, (k) => List.generate(3, (l) => 0)),
+            ),
+          );
 
     int index = 0;
     for (int i = 0; i < modelInputSize; i++) {
       for (int j = 0; j < modelInputSize; j++) {
-        input[0][i][j][0] = imageBytes[index++];
-        input[0][i][j][1] = imageBytes[index++];
-        input[0][i][j][2] = imageBytes[index++];
+        if (needsNormalization) {
+          // Normalize to 0-1 range for float32 input
+          input[0][i][j][0] = imageBytes[index++] / 255.0;
+          input[0][i][j][1] = imageBytes[index++] / 255.0;
+          input[0][i][j][2] = imageBytes[index++] / 255.0;
+        } else {
+          // Keep as uint8 (0-255)
+          input[0][i][j][0] = imageBytes[index++];
+          input[0][i][j][1] = imageBytes[index++];
+          input[0][i][j][2] = imageBytes[index++];
+        }
         if (resizedImage.numChannels == 4) {
-          index++;
+          index++; // Skip alpha channel
         }
       }
     }
 
-    final outputShape = interpreter.getOutputTensor(0).shape;
+    final outputTensor = interpreter.getOutputTensor(0);
+    final outputShape = outputTensor.shape;
+    final outputType = outputTensor.type;
+    
+    debugPrint("Model output - Shape: $outputShape, Type: $outputType");
+    
     if (outputShape.length != 2 ||
         outputShape[0] != 1 ||
         outputShape[1] != labels.length) {
@@ -184,14 +213,36 @@ void _inferenceIsolate(List<dynamic> args) async {
       );
     }
 
-    final output = List.generate(
-      outputShape[0],
-      (index) => List<int>.filled(outputShape[1], 0),
-    );
+    // Check if model outputs uint8 (quantized) or float32
+    final isQuantized = outputType == tfl.TensorType.uint8;
+    
+    final output = isQuantized 
+        ? List.generate(
+            outputShape[0],
+            (index) => List<int>.filled(outputShape[1], 0),
+          )
+        : List.generate(
+            outputShape[0],
+            (index) => List<double>.filled(outputShape[1], 0.0),
+          );
 
     interpreter.run(input, output);
 
-    final scores = output[0].map((e) => e / 255.0).toList();
+    // Normalize scores based on output type
+    final scores = isQuantized 
+        ? (output[0] as List<int>).map((e) => e / 255.0).toList()
+        : (output[0] as List<double>).toList();
+    
+    // Debug: Log top 5 predictions
+    final scoreIndexPairs = List.generate(scores.length, (i) => {'index': i, 'score': scores[i]});
+    scoreIndexPairs.sort((a, b) => (b['score'] as double).compareTo(a['score'] as double));
+    debugPrint("Top 5 predictions:");
+    for (int i = 0; i < 5 && i < scoreIndexPairs.length; i++) {
+      final idx = scoreIndexPairs[i]['index'] as int;
+      final score = scoreIndexPairs[i]['score'] as double;
+      final label = idx < labels.length ? labels[idx] : 'Unknown';
+      debugPrint("  ${i + 1}. $label: ${(score * 100).toStringAsFixed(2)}%");
+    }
 
     double maxScore = 0;
     int bestIndex = -1;

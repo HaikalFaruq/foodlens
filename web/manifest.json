@@ -1,13 +1,14 @@
 {
-    "name": "food_recognizer_app",
-    "short_name": "food_recognizer_app",
+    "name": "Pengenal Makanan",
+    "short_name": "Pengenal Makanan",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "Food Recognizer App Flutter Project",
+    "background_color": "#FF6F00",
+    "theme_color": "#FF6F00",
+    "description": "Aplikasi untuk mengenali makanan dan mendapatkan informasi nutrisi menggunakan AI",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
+    "lang": "id",
     "icons": [
         {
             "src": "icons/Icon-192.png",

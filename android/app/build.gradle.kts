@@ -17,6 +17,10 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+    
+    tasks.withType<JavaCompile> {
+        options.compilerArgs.add("-Xlint:-options")
+    }
 
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_11.toString()
