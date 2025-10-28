@@ -30,7 +30,7 @@ migrate_working_dir/
 .env
 env.g.dart
 firebase.json
-firebase_options.dart
+# firebase_options.dart # Committed for submission purposes
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
