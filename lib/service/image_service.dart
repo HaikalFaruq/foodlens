@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -17,7 +18,7 @@ class ImageService {
       if (pickedFile == null) return null;
       return File(pickedFile.path);
     } catch (e) {
-      print('Error picking image: $e');
+      debugPrint('Error picking image: $e');
       return null;
     }
   }
@@ -38,7 +39,7 @@ class ImageService {
       if (croppedFile == null) return null;
       return File(croppedFile.path);
     } catch (e) {
-      print('Error cropping image: $e');
+      debugPrint('Error cropping image: $e');
       return null;
     }
   }

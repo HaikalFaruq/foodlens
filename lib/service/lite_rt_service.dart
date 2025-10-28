@@ -1,4 +1,5 @@
 import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart';
 import 'package:food_recognizer_app/service/isolate_utils.dart';
 import 'package:tflite_flutter/tflite_flutter.dart' as tfl;
 
@@ -18,7 +19,7 @@ class LiteRTService {
     _interpreter = interpreter;
     _labels = labels;
     _isInitialized = true;
-    print("LiteRTService Initialized.");
+    debugPrint("LiteRTService Initialized.");
   }
 
   Future<String?> analyzeCameraFrame(CameraImage image) async {

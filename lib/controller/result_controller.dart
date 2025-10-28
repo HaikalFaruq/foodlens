@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:food_recognizer_app/model/food_info.dart';
 import 'package:food_recognizer_app/model/nutrition_info.dart';
@@ -44,9 +45,10 @@ class ResultController extends ChangeNotifier {
       try {
         descriptionResult = await _geminiService
             .generateFoodDescription(foodLabel)
-            .timeout(const Duration(seconds: 8));
-      } catch (_) {
-        descriptionResult = null;
+            .timeout(const Duration(seconds: 15));
+      } catch (e) {
+        debugPrint('[ResultController] Description fetch failed: $e');
+        descriptionResult = 'Deskripsi tidak tersedia saat ini.';
       }
 
       _foodInfo = _foodInfo?.copyWith(

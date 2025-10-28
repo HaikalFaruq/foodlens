@@ -1,4 +1,4 @@
-package com.example.food_recognizer_app
+package com.dicoding.foodrecognation
 
 import io.flutter.embedding.android.FlutterActivity
 

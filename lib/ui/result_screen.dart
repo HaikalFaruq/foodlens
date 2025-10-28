@@ -31,9 +31,11 @@ class ResultScreen extends StatelessWidget {
       )..fetchFoodDetails(analysisResult.label, analysisResult.confidence),
       child: Scaffold(
         appBar: AppBar(
-          title: const Text("Analysis Result"),
+          title: const Text("Hasil Analisis"),
           backgroundColor: scheme.primary,
           foregroundColor: scheme.onPrimary,
+          centerTitle: true,
+          elevation: 0,
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -80,17 +82,28 @@ class _ResultView extends StatelessWidget {
     return Consumer<ResultController>(
       builder: (context, controller, child) {
         final foodInfo = controller.foodInfo;
-        final isLoading = controller.isLoading && foodInfo?.description == null;
+        final isLoading = controller.isLoading;
 
         if (isLoading) {
           return const Center(child: CircularProgressIndicator());
         }
 
         if (foodInfo == null) {
-          return const Card(
-            child: Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text("No information available."),
+          return Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: const Padding(
+              padding: EdgeInsets.all(24.0),
+              child: Column(
+                children: [
+                  Icon(Icons.info_outline, size: 48, color: Colors.grey),
+                  SizedBox(height: 12),
+                  Text(
+                    "Informasi tidak tersedia.",
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ],
+              ),
             ),
           );
         }
@@ -143,12 +156,27 @@ class _ResultCard extends StatelessWidget {
             const Divider(height: 24),
             if (foodInfo.description != null &&
                 foodInfo.description!.isNotEmpty) ...[
-              Text("Description", style: textTheme.titleLarge),
+              Row(
+                children: [
+                  Icon(Icons.description, size: 20, color: scheme.primary),
+                  const SizedBox(width: 8),
+                  Text("Deskripsi", style: textTheme.titleLarge),
+                ],
+              ),
               const SizedBox(height: 8),
-              Text(foodInfo.description!),
+              Text(
+                foodInfo.description!,
+                style: textTheme.bodyMedium?.copyWith(height: 1.5),
+              ),
               const Divider(height: 24),
             ],
-            Text("Nutrition Facts", style: textTheme.titleLarge),
+            Row(
+              children: [
+                Icon(Icons.restaurant_menu, size: 20, color: scheme.primary),
+                const SizedBox(width: 8),
+                Text("Informasi Nutrisi", style: textTheme.titleLarge),
+              ],
+            ),
             const SizedBox(height: 8),
             _NutritionSection(nutrition: foodInfo.nutritionInfo),
           ],
@@ -168,32 +196,44 @@ class _NutritionSection extends StatelessWidget {
     final info = nutrition;
     if (info == null) {
       return const Text(
-        "Nutrition information could not be retrieved from the AI service.",
+        "Informasi nutrisi tidak dapat diambil dari layanan AI.",
+        style: TextStyle(fontStyle: FontStyle.italic),
       );
     }
     if (info.name.contains("Not Found")) {
       final cleanName = info.name.replaceAll(" (Not Found)", "");
-      return Text("No nutrition information could be found for $cleanName.");
+      return Text(
+        "Informasi nutrisi untuk $cleanName tidak ditemukan.",
+        style: const TextStyle(fontStyle: FontStyle.italic),
+      );
     }
 
     return Column(
       children: [
         _NutritionRow(
-          label: "Calories",
-          value: "${info.calories.toStringAsFixed(0)} kcal",
+          label: "Kalori",
+          value: "${info.calories.toStringAsFixed(0)} kkal",
+          icon: Icons.local_fire_department,
         ),
         _NutritionRow(
-          label: "Carbs",
+          label: "Karbohidrat",
           value: "${info.carbs.toStringAsFixed(1)} g",
+          icon: Icons.grain,
         ),
-        _NutritionRow(label: "Fat", value: "${info.fat.toStringAsFixed(1)} g"),
+        _NutritionRow(
+          label: "Lemak",
+          value: "${info.fat.toStringAsFixed(1)} g",
+          icon: Icons.water_drop,
+        ),
         _NutritionRow(
           label: "Protein",
           value: "${info.protein.toStringAsFixed(1)} g",
+          icon: Icons.egg,
         ),
         _NutritionRow(
-          label: "Fiber",
+          label: "Serat",
           value: "${info.fiber.toStringAsFixed(1)} g",
+          icon: Icons.eco,
         ),
       ],
     );
@@ -201,23 +241,41 @@ class _NutritionSection extends StatelessWidget {
 }
 
 class _NutritionRow extends StatelessWidget {
-  const _NutritionRow({required this.label, required this.value});
+  const _NutritionRow({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
 
   final String label;
   final String value;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
+    final scheme = Theme.of(context).colorScheme;
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 6.0),
+      padding: const EdgeInsets.all(12.0),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(8),
+      ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: textTheme.bodyLarge),
+          Icon(icon, size: 20, color: scheme.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(label, style: textTheme.bodyLarge),
+          ),
           Text(
             value,
-            style: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+            style: textTheme.bodyLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: scheme.primary,
+            ),
           ),
         ],
       ),

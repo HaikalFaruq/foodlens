@@ -117,7 +117,7 @@ class PhotoPickerController extends ChangeNotifier {
       notifyListeners();
     }
 
-    if (_image != null && _analysisResult != null) {
+    if (_image != null && _analysisResult != null && context.mounted) {
       Navigator.pushNamed(
         context,
         NavigationRoute.analyzeRoute.name,
@@ -126,7 +126,7 @@ class PhotoPickerController extends ChangeNotifier {
           analysisResult: _analysisResult!,
         ),
       );
-    } else {
+    } else if (_analysisResult == null) {
       _serviceError =
       'Makanan tidak teridentifikasi. Coba foto lain (pencahayaan jelas, objek memenuhi frame).';
       notifyListeners();

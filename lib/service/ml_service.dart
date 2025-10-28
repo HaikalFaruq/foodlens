@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:firebase_ml_model_downloader/firebase_ml_model_downloader.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
 import 'package:tflite_flutter/tflite_flutter.dart' as tfl;
@@ -21,7 +22,10 @@ class MLService {
 
   Future<void> initialize() async {
     if (_isInitialized) return;
+    
+    // Try Firebase first
     try {
+      debugPrint("Attempting to load model from Firebase...");
       final model = await FirebaseModelDownloader.instance.getModel(
         "food_model",
         FirebaseModelDownloadType.localModelUpdateInBackground,
@@ -35,8 +39,24 @@ class MLService {
       _interpreter = tfl.Interpreter.fromFile(model.file);
       await _loadLabels();
       _isInitialized = true;
+      debugPrint("ML Service initialized successfully from Firebase.");
+      return;
     } catch (e) {
-      print("FATAL: Could not initialize ML Service from Firebase: $e");
+      debugPrint("Could not load model from Firebase: $e");
+      debugPrint("Trying to load from local assets...");
+    }
+
+    // Fallback to local assets
+    try {
+      _interpreter = await tfl.Interpreter.fromAsset('assets/model.tflite');
+      await _loadLabels();
+      _isInitialized = true;
+      debugPrint("ML Service initialized successfully from local assets.");
+    } catch (e) {
+      debugPrint("FATAL: Could not initialize ML Service from assets either: $e");
+      debugPrint("INSTRUCTIONS:");
+      debugPrint("1. Upload TFLite model to Firebase Console with name 'food_model', OR");
+      debugPrint("2. Place model file at assets/model.tflite and update pubspec.yaml");
     }
   }
 
@@ -55,16 +75,16 @@ class MLService {
           })
           .where((label) => label.isNotEmpty)
           .toList();
-      print("ML Service: Successfully loaded ${_labels.length} labels.");
+      debugPrint("ML Service: Successfully loaded ${_labels.length} labels.");
     } catch (e) {
-      print('FATAL: Could not load labels: $e');
+      debugPrint('FATAL: Could not load labels: $e');
       _labels = [];
     }
   }
 
   Future<AnalysisResult?> analyzeImage(File imageFile) async {
     if (!_isInitialized || _labels.isEmpty) {
-      print("ML Service not ready or labels missing.");
+      debugPrint("ML Service not ready or labels missing.");
       return null;
     }
     final receivePort = ReceivePort();
@@ -77,7 +97,7 @@ class MLService {
     final results = await receivePort.first as List<dynamic>;
 
     if (results.isEmpty || results[0] == 'ERROR') {
-      print(
+      debugPrint(
         "Error from inference isolate: ${results.length > 1 ? results[1] : 'Unknown error'}",
       );
       return null;
@@ -87,22 +107,22 @@ class MLService {
     int bestIndex = results[2];
 
     if (bestIndex == -1) {
-      print("Inference did not find any valid result.");
+      debugPrint("Inference did not find any valid result.");
       return null;
     }
 
-    if (maxScore > 0.6) {
+    if (maxScore > 0.3) {
       final result = AnalysisResult(
         label: _labels[bestIndex],
         confidence: maxScore,
       );
       final confidencePercentage = (result.confidence * 100).toStringAsFixed(2);
-      print("Prediction: ${result.label} ($confidencePercentage%)");
+      debugPrint("Prediction: ${result.label} ($confidencePercentage%)");
       return result;
     }
 
     final confidencePercentage = (maxScore * 100).toStringAsFixed(2);
-    print(
+    debugPrint(
       "Low Confidence: Best match was ${_labels[bestIndex]} ($confidencePercentage%). Result ignored.",
     );
 

@@ -30,7 +30,7 @@ class _CameraScreenState extends State<CameraScreen>
   Future<void> _initialize() async {
     final mlService = context.read<MLService>();
     if (!mlService.isInitialized) {
-      print("ML Service not ready, cannot start camera.");
+      debugPrint("ML Service not ready, cannot start camera.");
       return;
     }
     await _liteRTService.initialize(mlService.interpreter, mlService.labels);
@@ -82,7 +82,7 @@ class _CameraScreenState extends State<CameraScreen>
       if (_cameras == null || _cameras!.isEmpty) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No cameras available.')),
+          const SnackBar(content: Text('Tidak ada kamera tersedia.')),
         );
         return;
       }
@@ -111,7 +111,7 @@ class _CameraScreenState extends State<CameraScreen>
           } catch (e) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Analyze error: $e')),
+                SnackBar(content: Text('Kesalahan analisis: $e')),
               );
             }
           } finally {
@@ -126,13 +126,13 @@ class _CameraScreenState extends State<CameraScreen>
     } on CameraException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Camera error [${e.code}]: ${e.description}')),
+          SnackBar(content: Text('Kesalahan kamera [${e.code}]: ${e.description}')),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error initializing camera: $e')),
+          SnackBar(content: Text('Kesalahan inisialisasi kamera: $e')),
         );
       }
     }
@@ -141,7 +141,10 @@ class _CameraScreenState extends State<CameraScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Live Feed Analysis')),
+      appBar: AppBar(
+        title: const Text('Analisis Kamera Langsung'),
+        centerTitle: true,
+      ),
       body: _isCameraInitialized
           ? Stack(
               fit: StackFit.expand,

@@ -6,13 +6,15 @@ import 'package:food_recognizer_app/model/nutrition_info.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 
 class GeminiService {
-  late final GenerativeModel _model;
+  late final GenerativeModel _jsonModel;
+  late final GenerativeModel _textModel;
   bool _isInitialized = false;
 
   GeminiService() {
     final apiKey = Env.geminiApiKey;
     if (apiKey.isNotEmpty) {
-      _model = GenerativeModel(
+      // Model for JSON responses (nutrition info)
+      _jsonModel = GenerativeModel(
         model: 'gemini-2.5-flash-lite',
         apiKey: apiKey,
         generationConfig: GenerationConfig(
@@ -20,6 +22,16 @@ class GeminiService {
           responseMimeType: 'application/json',
         ),
       );
+      
+      // Model for text responses (descriptions)
+      _textModel = GenerativeModel(
+        model: 'gemini-2.5-flash-lite',
+        apiKey: apiKey,
+        generationConfig: GenerationConfig(
+          temperature: 0.7,
+        ),
+      );
+      
       _isInitialized = true;
     } else {
       debugPrint('[GeminiService] API key kosong / belum dikonfigurasi.');
@@ -41,7 +53,7 @@ class GeminiService {
         'Satuan per 100 gram.';
 
     try {
-      final res = await _model
+      final res = await _jsonModel
           .generateContent([Content.text(prompt)])
           .timeout(const Duration(seconds: 20));
 
@@ -75,17 +87,18 @@ class GeminiService {
 
   Future<String?> generateFoodDescription(String foodName) async {
     if (!_isInitialized) {
-      return 'Could not generate description: API key not configured.';
+      return 'Tidak dapat menghasilkan deskripsi: API key belum dikonfigurasi.';
     }
 
     final prompt =
-        "Berikan deskripsi singkat 2–3 kalimat tentang '$foodName' "
-        "dalam bahasa Indonesia (tanpa heading/bullet).";
+        "Berikan deskripsi singkat 2-3 kalimat tentang '$foodName' "
+        "dalam bahasa Indonesia. Jelaskan secara natural tanpa format JSON, "
+        "tanpa heading, dan tanpa bullet points.";
 
     try {
-      final res = await _model
+      final res = await _textModel
           .generateContent([Content.text(prompt)])
-          .timeout(const Duration(seconds: 20));
+          .timeout(const Duration(seconds: 15));
 
       if (res.promptFeedback != null &&
           res.promptFeedback!.blockReason != null) {
@@ -93,7 +106,24 @@ class GeminiService {
         return 'Deskripsi diblokir oleh kebijakan konten.';
       }
 
-      return res.text ?? 'Tidak dapat menghasilkan deskripsi.';
+      final description = res.text?.trim();
+      if (description == null || description.isEmpty) {
+        return 'Tidak dapat menghasilkan deskripsi.';
+      }
+      
+      // Clean up any JSON artifacts if present
+      if (description.startsWith('{') || description.startsWith('[')) {
+        try {
+          final parsed = json.decode(description);
+          if (parsed is Map && parsed.containsKey('deskripsi')) {
+            return parsed['deskripsi']?.toString().trim();
+          }
+        } catch (_) {
+          // If JSON parsing fails, return as-is
+        }
+      }
+      
+      return description;
     } on TimeoutException {
       return 'Layanan AI timeout. Coba lagi.';
     } catch (e, st) {

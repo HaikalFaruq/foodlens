@@ -28,9 +28,11 @@ class _PhotoPickerScreenState extends State<PhotoPickerScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Food Recognizer'),
+        title: const Text('Pengenal Makanan'),
         backgroundColor: scheme.primary,
         foregroundColor: scheme.onPrimary,
+        centerTitle: true,
+        elevation: 0,
       ),
       body: Stack(
         children: [
@@ -106,11 +108,13 @@ class _ImagePlaceholder extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.camera_alt, size: 60, color: scheme.secondary),
+              Icon(Icons.add_photo_alternate, size: 80, color: scheme.primary.withValues(alpha: 0.6)),
               const SizedBox(height: 16),
               Text(
-                "Tap to select an image",
-                style: Theme.of(context).textTheme.titleMedium,
+                "Ketuk untuk memilih gambar",
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: scheme.onSurface.withValues(alpha: 0.7),
+                ),
               ),
             ],
           ),
@@ -144,7 +148,7 @@ class _BottomSection extends StatelessWidget {
                 : () => context
                 .read<PhotoPickerController>()
                 .showImageSourceDialog(context),
-            child: const Text('Pick another image'),
+            child: const Text('Pilih gambar lain'),
           ),
         ],
       );
@@ -162,7 +166,7 @@ class _BottomSection extends StatelessWidget {
                   : () => context
                   .read<PhotoPickerController>()
                   .showImageSourceDialog(context),
-              child: const Text('Pick another image'),
+              child: const Text('Pilih gambar lain'),
             ),
           ],
         ],
@@ -177,10 +181,10 @@ class _BottomSection extends StatelessWidget {
       children: [
         ElevatedButton.icon(
           icon: const Icon(Icons.insights),
-          label: const Text('View Analysis Detail'),
+          label: const Text('Lihat Detail Analisis'),
           onPressed: () {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Result already generated.')),
+              const SnackBar(content: Text('Hasil sudah dibuat.')),
             );
           },
         ),
@@ -191,7 +195,7 @@ class _BottomSection extends StatelessWidget {
               : () => context
               .read<PhotoPickerController>()
               .showImageSourceDialog(context),
-          child: const Text('Pick another image'),
+          child: const Text('Pilih gambar lain'),
         ),
       ],
     );
@@ -209,15 +213,15 @@ class _ActionButtons extends StatelessWidget {
       children: [
         ElevatedButton.icon(
           icon: const Icon(Icons.crop),
-          label: const Text('Crop'),
+          label: const Text('Potong Gambar'),
           onPressed: controller.isLoading
               ? null
               : () => context.read<PhotoPickerController>().cropImage(context),
         ),
         const SizedBox(height: 12),
         ElevatedButton.icon(
-          icon: const Icon(Icons.science),
-          label: const Text('Analyze'),
+          icon: const Icon(Icons.auto_awesome),
+          label: const Text('Analisis Gambar'),
           onPressed: controller.isLoading
               ? null
               : () =>
@@ -236,26 +240,31 @@ class _PickerButtons extends StatelessWidget {
     final controller = context.watch<PhotoPickerController>();
     return Column(
       children: [
-        ElevatedButton(
+        ElevatedButton.icon(
+          icon: const Icon(Icons.photo_library),
+          label: const Text('Pilih dari Galeri/Kamera'),
           onPressed: controller.isLoading
               ? null
               : () => context
                   .read<PhotoPickerController>()
                   .showImageSourceDialog(context),
           style: ElevatedButton.styleFrom(
-            minimumSize: const Size(double.infinity, 50),
+            minimumSize: const Size(double.infinity, 54),
           ),
-          child: const Text('Pick from Gallery/Camera'),
         ),
         const SizedBox(height: 12),
-        TextButton(
+        OutlinedButton.icon(
+          icon: const Icon(Icons.videocam),
+          label: const Text('Atau Gunakan Kamera Langsung'),
           onPressed: controller.isLoading
               ? null
               : () => Navigator.pushNamed(
                     context,
                     NavigationRoute.cameraRoute.name,
                   ),
-          child: const Text('Or use Live Camera Feed'),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size(double.infinity, 54),
+          ),
         ),
       ],
     );
@@ -268,7 +277,7 @@ class _LoadingOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.black.withOpacity(0.5),
+      color: Colors.black.withValues(alpha: 0.5),
       child: const Center(child: CircularProgressIndicator()),
     );
   }
