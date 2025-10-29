@@ -73,23 +73,32 @@ A Flutter project that identifies food items in images using TensorFlow Lite, re
     flutter pub get
     ```
 
-3.  **Set up Firebase:**
+3.  **Add TFLite Model File:**
 
-    - Create a Firebase project in the Firebase Console.
-    - Enable the ML Model Downloader.
-    - Add the `google-services.json` (for Android) and `GoogleService-Info.plist` (for iOS) files to their respective platform directories.
-    - Configure Firebase in your Flutter project using the `firebase_core` package.
+    ⚠️ **IMPORTANT**: The TFLite model file is required for the app to work!
+    
+    - Download the food classification model (`.tflite` file)
+    - Place the model file at: `assets/model.tflite`
+    - The model should be a TensorFlow Lite model trained for food classification
+    
+    **Note**: The `google-services.json` file is already included in the repository for team collaboration.
 
-4.  **Configure Environment Variables:**
+4.  **Set up Firebase (Optional - for Firebase ML Model hosting):**
 
-    - Create a `.env` file in the root of the project.
+    - Create a Firebase project in the Firebase Console
+    - Enable the ML Model Downloader
+    - Upload your model with name `food_model` (the app will try Firebase first, then fallback to local assets)
+
+5.  **Configure Environment Variables:**
+
+    - Create a `.env` file in the root of the project
     - Add your Gemini API key to the `.env` file:
 
     ```
     GEMINI_API_KEY=YOUR_GEMINI_API_KEY
     ```
 
-5.  **Generate Environment Variables:**
+6.  **Generate Environment Variables:**
 
     ```bash
     flutter pub run build_runner build --delete-conflicting-outputs

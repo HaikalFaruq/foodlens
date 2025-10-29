@@ -41,7 +41,7 @@ flutter:
     - assets/
     - assets/data/nutrition_data.json
     - assets/labelmap.txt
-    # - assets/model.tflite  # Uncomment this line when you add the model file
+    - assets/model.tflite
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
 
